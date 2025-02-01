@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Screwtape Visualizer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <h1>Screwtape (Modified BF) Visualizer</h1>
+
+  <div class="program-input">
+    <label for="program">Program:</label><br>
+    <textarea id="program" rows="5" cols="60">
+++++++++[>++++++++<-]>.[>++++++<-]>.
+    </textarea>
+  </div>
+
+  <div class="controls">
+    <button id="runBtn">Run</button>
+    <button id="stepBtn">Step</button>
+    <button id="pauseBtn">Pause</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+
+  <div class="output-section">
+    <div>
+      <strong>Output:</strong>
+      <span id="output"></span>
+    </div>
+    <div>
+      <strong>Current Instruction Pointer:</strong>
+      <span id="instrPointer"></span>
+    </div>
+  </div>
+
+  <div class="tape-container">
+    <h2>Memory Tape</h2>
+    <div id="tape"></div>
+  </div>
+
+  <script src="screwtape.js"></script>
+</body>
+</html>
