@@ -16,6 +16,11 @@ body {
     margin-right: 5px;
   }
   
+  .speed-control {
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  
   .output-section {
     margin-top: 10px;
     padding: 10px;
@@ -26,7 +31,6 @@ body {
   #output {
     font-weight: bold;
     margin-left: 10px;
-    /* Allow HTML formatting for nonprintables */
   }
   
   .tape-container {
@@ -75,7 +79,6 @@ body {
     right: -10px;
   }
   
-  /* Program display styling */
   .program-display {
     margin-top: 10px;
     padding: 10px;
@@ -91,7 +94,6 @@ body {
     color: red;
   }
   
-  /* Styling for non-printing characters */
   .nonprint {
     font-family: "Courier New", monospace;
     font-style: italic;

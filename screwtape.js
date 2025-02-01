@@ -1,10 +1,11 @@
 /**
  * Screwtape Visualizer
- *  - Modified BF (Screwtape): no forward jumps on '['; ']' jumps back if current cell != 0.
- *  - Memory is a doubly linked list that grows as needed.
+ *  - Modified BF: no forward jumps on '['; ']' jumps back if current cell != 0.
+ *  - Tape is modeled as a doubly linked list (infinite in both directions).
  *  - Cells are treated as unsigned ints.
- *  - Non-printing characters are displayed as symbolic spans.
- *  - Program text is visualized with the current instruction bold and red.
+ *  - Non-printing characters are rendered symbolically.
+ *  - The program text is displayed with the current instruction in bold red.
+ *  - A slider controls the speed (ms delay per step).
  */
 
 const programInput = document.getElementById("program");
@@ -12,6 +13,8 @@ const runBtn = document.getElementById("runBtn");
 const stepBtn = document.getElementById("stepBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const resetBtn = document.getElementById("resetBtn");
+const speedSlider = document.getElementById("speedSlider");
+const speedValue = document.getElementById("speedValue");
 const outputSpan = document.getElementById("output");
 const tapeDiv = document.getElementById("tape");
 const programDisplay = document.getElementById("programDisplay");
@@ -19,9 +22,10 @@ const programDisplay = document.getElementById("programDisplay");
 let screwtape = null;
 let isRunning = false;
 let stepInterval = null;
+let delay = parseInt(speedSlider.value); // current delay in ms
 
 ////////////////////////////////////////
-// Tape Node (Doubly Linked List)
+// Tape Node: doubly linked list
 ////////////////////////////////////////
 class TapeNode {
   constructor(value = 0) {
@@ -39,18 +43,17 @@ class ScrewtapeInterpreter {
     this.program = program;
     this.ip = 0; // instruction pointer
     this.output = "";
+    this.terminated = false;
 
-    // Precompute bracket map: for each ']', store its matching '['
+    // Build bracket map: for each ']', store matching '['
     this.bracketMap = this.buildBracketMap(program);
 
-    // Tape: start with one node (value=0)
+    // Set up tape: start with one node of value 0.
     this.currentNode = new TapeNode(0);
     this.currentNode.id = "node0";
     this.nodeCount = 1;
     this.leftmostNode = this.currentNode;
     this.rightmostNode = this.currentNode;
-
-    this.terminated = false;
   }
 
   buildBracketMap(program) {
@@ -81,9 +84,7 @@ class ScrewtapeInterpreter {
         this.currentNode.value++;
         break;
       case "-":
-        if (this.currentNode.value > 0) {
-          this.currentNode.value--;
-        }
+        if (this.currentNode.value > 0) this.currentNode.value--;
         break;
       case ">":
         if (!this.currentNode.right) {
@@ -110,24 +111,22 @@ class ScrewtapeInterpreter {
         this.currentNode = this.currentNode.left;
         break;
       case ".":
-        // When printing, check if the cell's value is a printable character.
         let charCode = this.currentNode.value;
         this.output += formatChar(charCode);
         break;
       case "[":
-        // '[' is a no-op; it's only used as a marker for jumps.
+        // '[' is a no-op in Screwtape.
         break;
       case "]":
         if (this.currentNode.value !== 0) {
-          const match = this.bracketMap[this.ip];
-          if (match !== undefined) {
-            this.ip = match;
+          let matchIndex = this.bracketMap[this.ip];
+          if (matchIndex !== undefined) {
+            this.ip = matchIndex;
             return;
           }
         }
         break;
       default:
-        // Ignore unknown instructions
         break;
     }
     this.ip++;
@@ -137,21 +136,19 @@ class ScrewtapeInterpreter {
   }
 
   runStep() {
-    if (!this.terminated) {
-      this.step();
-    }
+    if (!this.terminated) this.step();
   }
 }
 
 ////////////////////////////////////////
-// Helper: Format a character for output
+// Helper: Format character output
 ////////////////////////////////////////
 function formatChar(code) {
   // Printable ASCII: 32 to 126
   if (code >= 32 && code <= 126) {
     return String.fromCharCode(code);
   }
-  // Map some common nonprintables:
+  // Map common nonprintables to symbols:
   switch (code) {
     case 0: return '<span class="nonprint">&lt;NUL&gt;</span>';
     case 7: return '<span class="nonprint">&lt;BEL&gt;</span>';
@@ -159,16 +156,14 @@ function formatChar(code) {
     case 9: return '<span class="nonprint">&lt;TAB&gt;</span>';
     case 10: return '<span class="nonprint">&lt;LF&gt;</span>';
     case 13: return '<span class="nonprint">&lt;CR&gt;</span>';
-    default:
-      return `<span class="nonprint">&lt;${code}&gt;</span>`;
+    default: return `<span class="nonprint">&lt;${code}&gt;</span>`;
   }
 }
 
 ////////////////////////////////////////
-// Visualization: Rendering Tape, Program, and Output
+// Visualization Functions
 ////////////////////////////////////////
 function render(interp) {
-  // Update output using innerHTML so formatting shows
   outputSpan.innerHTML = interp.output;
   updateProgramDisplay(interp);
   renderTape(interp);
@@ -186,9 +181,7 @@ function renderTape(interp) {
   for (let node of nodes) {
     let div = document.createElement("div");
     div.className = "tape-cell";
-    if (node === interp.currentNode) {
-      div.classList.add("current");
-    }
+    if (node === interp.currentNode) div.classList.add("current");
     div.textContent = node.value;
     tapeDiv.appendChild(div);
   }
@@ -215,7 +208,8 @@ function reset() {
   if (stepInterval) clearInterval(stepInterval);
   stepInterval = null;
   isRunning = false;
-  let program = programInput.value;
+  delay = parseInt(speedSlider.value);
+  const program = programInput.value;
   screwtape = new ScrewtapeInterpreter(program);
   render(screwtape);
 }
@@ -233,7 +227,7 @@ function runExecution() {
     if (screwtape.terminated) {
       pauseExecution();
     }
-  }, 300);
+  }, delay);
 }
 
 function pauseExecution() {
@@ -244,11 +238,29 @@ function pauseExecution() {
   }
 }
 
+////////////////////////////////////////
+// Speed Slider: update delay based on slider value
+////////////////////////////////////////
+speedSlider.addEventListener("input", () => {
+  delay = parseInt(speedSlider.value);
+  speedValue.textContent = delay;
+  // If running, restart the interval with new delay
+  if (isRunning) {
+    clearInterval(stepInterval);
+    stepInterval = setInterval(() => {
+      stepExecution();
+      if (screwtape.terminated) {
+        pauseExecution();
+      }
+    }, delay);
+  }
+});
+
 // Wire up buttons
 runBtn.addEventListener("click", runExecution);
 stepBtn.addEventListener("click", stepExecution);
 pauseBtn.addEventListener("click", pauseExecution);
 resetBtn.addEventListener("click", reset);
 
-// On load, do initial reset
+// Initial reset on page load
 reset();
