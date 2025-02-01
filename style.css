@@ -79,6 +79,7 @@ body {
     right: -10px;
   }
   
+  /* Updated Program Display styling: allow wrapping */
   .program-display {
     margin-top: 10px;
     padding: 10px;
@@ -86,7 +87,10 @@ body {
     border: 1px solid #ccc;
     font-family: monospace;
     font-size: 18px;
-    white-space: pre;
+    /* Instead of 'pre', use pre-wrap so that long programs wrap */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
   
   .program-display .current-instr {

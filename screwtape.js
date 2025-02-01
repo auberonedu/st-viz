@@ -2,7 +2,8 @@
  * Screwtape Visualizer
  *  - Modified BF: no forward jumps on '['; ']' jumps back if current cell != 0.
  *  - Tape is modeled as a doubly linked list (infinite in both directions).
- *  - Cells are treated as unsigned ints.
+ *  - Cells are treated as signed 32-bit integers in the range [-2147483648, 2147483647],
+ *    with overflow/underflow.
  *  - Non-printing characters are rendered symbolically.
  *  - The program text is displayed with the current instruction in bold red.
  *  - A slider controls the speed (ms delay per step).
@@ -29,7 +30,7 @@ let delay = parseInt(speedSlider.value); // current delay in ms
 ////////////////////////////////////////
 class TapeNode {
   constructor(value = 0) {
-    this.value = value;
+    this.value = value; // stored as a 32-bit signed integer
     this.left = null;
     this.right = null;
   }
@@ -81,10 +82,12 @@ class ScrewtapeInterpreter {
 
     switch (instr) {
       case "+":
-        this.currentNode.value++;
+        // Increment using 32-bit signed arithmetic.
+        this.currentNode.value = (this.currentNode.value + 1) | 0;
         break;
       case "-":
-        if (this.currentNode.value > 0) this.currentNode.value--;
+        // Decrement using 32-bit signed arithmetic.
+        this.currentNode.value = (this.currentNode.value - 1) | 0;
         break;
       case ">":
         if (!this.currentNode.right) {
@@ -111,6 +114,7 @@ class ScrewtapeInterpreter {
         this.currentNode = this.currentNode.left;
         break;
       case ".":
+        // When printing, we use formatChar to display nonprinting characters.
         let charCode = this.currentNode.value;
         this.output += formatChar(charCode);
         break;
@@ -122,7 +126,7 @@ class ScrewtapeInterpreter {
           let matchIndex = this.bracketMap[this.ip];
           if (matchIndex !== undefined) {
             this.ip = matchIndex;
-            return;
+            return; // Skip the ip++ below.
           }
         }
         break;
@@ -144,11 +148,11 @@ class ScrewtapeInterpreter {
 // Helper: Format character output
 ////////////////////////////////////////
 function formatChar(code) {
-  // Printable ASCII: 32 to 126
+  // For printing, only printable ASCII (32..126) are output directly.
+  // Otherwise, we return a symbolic representation.
   if (code >= 32 && code <= 126) {
     return String.fromCharCode(code);
   }
-  // Map common nonprintables to symbols:
   switch (code) {
     case 0: return '<span class="nonprint">&lt;NUL&gt;</span>';
     case 7: return '<span class="nonprint">&lt;BEL&gt;</span>';
@@ -244,7 +248,6 @@ function pauseExecution() {
 speedSlider.addEventListener("input", () => {
   delay = parseInt(speedSlider.value);
   speedValue.textContent = delay;
-  // If running, restart the interval with new delay
   if (isRunning) {
     clearInterval(stepInterval);
     stepInterval = setInterval(() => {
