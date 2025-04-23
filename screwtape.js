@@ -1,14 +1,3 @@
-/**
- * Screwtape Visualizer
- *  - Modified BF: no forward jumps on '['; ']' jumps back if current cell != 0.
- *  - Tape is modeled as a doubly linked list (infinite in both directions).
- *  - Cells are treated as signed 32-bit integers in the range [-2147483648, 2147483647],
- *    with overflow/underflow.
- *  - Non-printing characters are rendered symbolically.
- *  - The program text is displayed with the current instruction in bold red.
- *  - A slider controls the speed (ms delay per step).
- */
-
 const programInput = document.getElementById("program");
 const runBtn = document.getElementById("runBtn");
 const stepBtn = document.getElementById("stepBtn");
@@ -19,37 +8,29 @@ const speedValue = document.getElementById("speedValue");
 const outputSpan = document.getElementById("output");
 const tapeDiv = document.getElementById("tape");
 const programDisplay = document.getElementById("programDisplay");
+const addLeftBtn = document.getElementById("addLeftBtn");
+const addRightBtn = document.getElementById("addRightBtn");
 
 let screwtape = null;
 let isRunning = false;
 let stepInterval = null;
-let delay = parseInt(speedSlider.value); // current delay in ms
+let delay = parseInt(speedSlider.value);
 
-////////////////////////////////////////
-// Tape Node: doubly linked list
-////////////////////////////////////////
 class TapeNode {
   constructor(value = 0) {
-    this.value = value; // stored as a 32-bit signed integer
+    this.value = value;
     this.left = null;
     this.right = null;
   }
 }
 
-////////////////////////////////////////
-// ScrewtapeInterpreter
-////////////////////////////////////////
 class ScrewtapeInterpreter {
   constructor(program) {
     this.program = program;
-    this.ip = 0; // instruction pointer
+    this.ip = 0;
     this.output = "";
     this.terminated = false;
-
-    // Build bracket map: for each ']', store matching '['
     this.bracketMap = this.buildBracketMap(program);
-
-    // Set up tape: start with one node of value 0.
     this.currentNode = new TapeNode(0);
     this.currentNode.id = "node0";
     this.nodeCount = 1;
@@ -73,64 +54,66 @@ class ScrewtapeInterpreter {
     return map;
   }
 
+  addCellLeft() {
+    const newNode = new TapeNode(0);
+    newNode.id = "node" + this.nodeCount++;
+    this.leftmostNode.left = newNode;
+    newNode.right = this.leftmostNode;
+    this.leftmostNode = newNode;
+  }
+
+  addCellRight() {
+    const newNode = new TapeNode(0);
+    newNode.id = "node" + this.nodeCount++;
+    this.rightmostNode.right = newNode;
+    newNode.left = this.rightmostNode;
+    this.rightmostNode = newNode;
+  }
+
   step() {
     if (this.ip < 0 || this.ip >= this.program.length) {
       this.terminated = true;
       return;
     }
     const instr = this.program[this.ip];
-
     switch (instr) {
       case "+":
-        // Increment using 32-bit signed arithmetic.
         this.currentNode.value = (this.currentNode.value + 1) | 0;
         break;
       case "-":
-        // Decrement using 32-bit signed arithmetic.
         this.currentNode.value = (this.currentNode.value - 1) | 0;
         break;
       case ">":
         if (!this.currentNode.right) {
-          let newNode = new TapeNode(0);
+          const newNode = new TapeNode(0);
           newNode.id = "node" + this.nodeCount++;
           newNode.left = this.currentNode;
           this.currentNode.right = newNode;
-          if (this.currentNode === this.rightmostNode) {
-            this.rightmostNode = newNode;
-          }
+          this.rightmostNode = newNode;
         }
         this.currentNode = this.currentNode.right;
         break;
       case "<":
         if (!this.currentNode.left) {
-          let newNode = new TapeNode(0);
+          const newNode = new TapeNode(0);
           newNode.id = "node" + this.nodeCount++;
           newNode.right = this.currentNode;
           this.currentNode.left = newNode;
-          if (this.currentNode === this.leftmostNode) {
-            this.leftmostNode = newNode;
-          }
+          this.leftmostNode = newNode;
         }
         this.currentNode = this.currentNode.left;
         break;
       case ".":
-        // When printing, we use formatChar to display nonprinting characters.
-        let charCode = this.currentNode.value;
-        this.output += formatChar(charCode);
-        break;
-      case "[":
-        // '[' is a no-op in Screwtape.
+        this.output += formatChar(this.currentNode.value);
         break;
       case "]":
         if (this.currentNode.value !== 0) {
-          let matchIndex = this.bracketMap[this.ip];
+          const matchIndex = this.bracketMap[this.ip];
           if (matchIndex !== undefined) {
             this.ip = matchIndex;
-            return; // Skip the ip++ below.
+            return;
           }
         }
-        break;
-      default:
         break;
     }
     this.ip++;
@@ -144,15 +127,8 @@ class ScrewtapeInterpreter {
   }
 }
 
-////////////////////////////////////////
-// Helper: Format character output
-////////////////////////////////////////
 function formatChar(code) {
-  // For printing, only printable ASCII (32..126) are output directly.
-  // Otherwise, we return a symbolic representation.
-  if (code >= 32 && code <= 126) {
-    return String.fromCharCode(code);
-  }
+  if (code >= 32 && code <= 126) return String.fromCharCode(code);
   switch (code) {
     case 0: return '<span class="nonprint">&lt;NUL&gt;</span>';
     case 7: return '<span class="nonprint">&lt;BEL&gt;</span>';
@@ -164,9 +140,6 @@ function formatChar(code) {
   }
 }
 
-////////////////////////////////////////
-// Visualization Functions
-////////////////////////////////////////
 function render(interp) {
   outputSpan.innerHTML = interp.output;
   updateProgramDisplay(interp);
@@ -183,31 +156,42 @@ function renderTape(interp) {
     cur = cur.right;
   }
   for (let node of nodes) {
-    let div = document.createElement("div");
+    const div = document.createElement("div");
     div.className = "tape-cell";
     if (node === interp.currentNode) div.classList.add("current");
+
+    div.contentEditable = !isRunning;
+    div.spellcheck = false;
     div.textContent = node.value;
+
+    div.addEventListener("blur", () => {
+      const num = parseInt(div.textContent, 10);
+      node.value = Number.isNaN(num) ? 0 : (num | 0);
+      render(interp);
+    });
+
+    div.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        div.blur();
+      }
+    });
+
     tapeDiv.appendChild(div);
   }
 }
 
 function updateProgramDisplay(interp) {
-  let prog = interp.program;
+  const prog = interp.program;
   let html = "";
   for (let i = 0; i < prog.length; i++) {
-    let ch = prog[i];
-    if (i === interp.ip) {
-      html += `<span class="current-instr">${ch}</span>`;
-    } else {
-      html += ch;
-    }
+    html += i === interp.ip
+      ? `<span class="current-instr">${prog[i]}</span>`
+      : prog[i];
   }
   programDisplay.innerHTML = html;
 }
 
-////////////////////////////////////////
-// Control Functions
-////////////////////////////////////////
 function reset() {
   if (stepInterval) clearInterval(stepInterval);
   stepInterval = null;
@@ -228,9 +212,7 @@ function runExecution() {
   isRunning = true;
   stepInterval = setInterval(() => {
     stepExecution();
-    if (screwtape.terminated) {
-      pauseExecution();
-    }
+    if (screwtape.terminated) pauseExecution();
   }, delay);
 }
 
@@ -242,9 +224,6 @@ function pauseExecution() {
   }
 }
 
-////////////////////////////////////////
-// Speed Slider: update delay based on slider value
-////////////////////////////////////////
 speedSlider.addEventListener("input", () => {
   delay = parseInt(speedSlider.value);
   speedValue.textContent = delay;
@@ -252,18 +231,26 @@ speedSlider.addEventListener("input", () => {
     clearInterval(stepInterval);
     stepInterval = setInterval(() => {
       stepExecution();
-      if (screwtape.terminated) {
-        pauseExecution();
-      }
+      if (screwtape.terminated) pauseExecution();
     }, delay);
   }
 });
 
-// Wire up buttons
 runBtn.addEventListener("click", runExecution);
 stepBtn.addEventListener("click", stepExecution);
 pauseBtn.addEventListener("click", pauseExecution);
 resetBtn.addEventListener("click", reset);
+addLeftBtn.addEventListener("click", () => {
+  if (!isRunning && screwtape) {
+    screwtape.addCellLeft();
+    render(screwtape);
+  }
+});
+addRightBtn.addEventListener("click", () => {
+  if (!isRunning && screwtape) {
+    screwtape.addCellRight();
+    render(screwtape);
+  }
+});
 
-// Initial reset on page load
 reset();

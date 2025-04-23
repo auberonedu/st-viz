@@ -1,109 +1,118 @@
 body {
-    font-family: sans-serif;
-    margin: 20px;
-    background: #f6f6f6;
-  }
-  
-  .program-input {
-    margin-bottom: 10px;
-  }
-  
-  textarea {
-    font-family: monospace;
-  }
-  
-  .controls button {
-    margin-right: 5px;
-  }
-  
-  .speed-control {
-    margin-top: 10px;
-    font-size: 14px;
-  }
-  
-  .output-section {
-    margin-top: 10px;
-    padding: 10px;
-    background: #fff;
-    border: 1px solid #ccc;
-  }
-  
-  #output {
-    font-weight: bold;
-    margin-left: 10px;
-  }
-  
-  .tape-container {
-    margin-top: 10px;
-  }
-  
-  #tape {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  
-  .tape-cell {
-    margin: 2px;
-    padding: 5px;
-    min-width: 50px;
-    text-align: center;
-    background: #eee;
-    border: 1px solid #aaa;
-    font-family: monospace;
-    position: relative;
-  }
-  
-  .tape-cell.current {
-    background: #ffcc88;
-    border-color: #f90;
-  }
-  
-  .tape-cell:before,
-  .tape-cell:after {
-    content: '';
-    width: 10px;
-    height: 10px;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    border: 1px solid #aaa;
-    background: #fff;
-    z-index: -1;
-  }
-  
-  .tape-cell:before {
-    left: -10px;
-  }
-  .tape-cell:after {
-    right: -10px;
-  }
-  
-  /* Updated Program Display styling: allow wrapping */
-  .program-display {
-    margin-top: 10px;
-    padding: 10px;
-    background: #fff;
-    border: 1px solid #ccc;
-    font-family: monospace;
-    font-size: 18px;
-    /* Instead of 'pre', use pre-wrap so that long programs wrap */
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-  }
-  
-  .program-display .current-instr {
-    font-weight: bold;
-    color: red;
-  }
-  
-  .nonprint {
-    font-family: "Courier New", monospace;
-    font-style: italic;
-    color: #999;
-    background: #eee;
-    padding: 1px 2px;
-    border-radius: 3px;
-  }
-  
+  font-family: sans-serif;
+  margin: 20px;
+  background: #f6f6f6;
+}
+
+.program-input {
+  margin-bottom: 10px;
+}
+
+textarea {
+  font-family: monospace;
+}
+
+.controls button {
+  margin-right: 5px;
+}
+
+.speed-control {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.output-section {
+  margin-top: 10px;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #ccc;
+}
+
+#output {
+  font-weight: bold;
+  margin-left: 10px;
+}
+
+.tape-container {
+  margin-top: 10px;
+}
+
+#tape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tape-cell {
+  margin: 2px;
+  padding: 5px;
+  min-width: 50px;
+  text-align: center;
+  background: #eee;
+  border: 1px solid #aaa;
+  font-family: monospace;
+  position: relative;
+}
+
+.tape-cell.current {
+  background: #ffcc88;
+  border-color: #f90;
+}
+
+.tape-cell[contenteditable="true"] {
+  cursor: text;
+  outline: 2px dashed #aaa;
+}
+
+.tape-cell:before,
+.tape-cell:after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 1px solid #aaa;
+  background: #fff;
+  z-index: -1;
+}
+
+.tape-cell:before {
+  left: -10px;
+}
+.tape-cell:after {
+  right: -10px;
+}
+
+.tape-actions {
+  margin-top: 8px;
+}
+.tape-actions button {
+  margin-right: 4px;
+}
+
+.program-display {
+  margin-top: 10px;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #ccc;
+  font-family: monospace;
+  font-size: 18px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.program-display .current-instr {
+  font-weight: bold;
+  color: red;
+}
+
+.nonprint {
+  font-family: "Courier New", monospace;
+  font-style: italic;
+  color: #999;
+  background: #eee;
+  padding: 1px 2px;
+  border-radius: 3px;
+}
